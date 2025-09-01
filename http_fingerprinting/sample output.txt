@@ -1,0 +1,45 @@
+======================================================================
+🔍 HTTP REQUEST ANALYSIS STARTING
+======================================================================
+📖 Reading file: my_request.txt
+✅ File loaded successfully (172 characters)
+📋 Parsed: GET /api/users
+🌐 IP: 192.168.1.100
+📊 Headers found: 6
+
+🔍 DETAILED ANALYSIS:
+----------------------------------------
+🔍 Analyzing User-Agent: python-requests/2.28.1
+🔍 Analyzing 6 headers...
+
+======================================================================
+📊 ANALYSIS RESULTS
+======================================================================
+📄 File: my_request.txt
+🎯 Classification: 🤖 TRADITIONAL BOT
+⚠️ Threat Level: MEDIUM
+📊 Risk Score: 43/50
+🔍 Confidence: 100%
+
+📋 REQUEST DETAILS:
+   Method: GET
+   Path: /api/users
+   IP: 192.168.1.100
+   Headers: 6
+
+🔍 USER-AGENT ANALYSIS:
+   User-Agent: python-requests/2.28.1
+   Length: 22 characters
+   Entropy: 4.0
+
+🚩 FINDINGS:
+   1. Short User-Agent (22 chars)
+   2. 🤖 BOT DETECTED: python-requests
+   3. Generic Accept header (*/*)
+   4. Missing Accept-Language header
+
+⏰ Analysis completed: 2025-09-01 09:08:13
+======================================================================
+
+💾 Save detailed results as JSON? (y/N): 
+
