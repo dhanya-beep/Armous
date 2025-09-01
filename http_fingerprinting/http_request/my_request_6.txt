@@ -1,0 +1,4 @@
+GET /health HTTP/1.1
+Host: mysite.com
+User-Agent: curl/7.68.0
+Accept: */*
