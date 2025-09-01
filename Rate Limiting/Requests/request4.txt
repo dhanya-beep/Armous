@@ -1,0 +1,8 @@
+POST /checkout HTTP/1.1
+Host: example.com
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64)
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 45
+X-Forwarded-For: 192.168.1.10
+
+card_number=1234-5678-9876-5432&amount=99.99

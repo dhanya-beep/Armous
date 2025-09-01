@@ -1,0 +1,5 @@
+GET /data?id=2 HTTP/1.1
+Host: target-webapp.com
+User-Agent: Scrapy/2.0.0 (+https://scrapy.org)
+Accept: application/json
+X-Forwarded-For: 145.23.45.9

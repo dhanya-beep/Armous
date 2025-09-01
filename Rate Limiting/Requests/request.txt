@@ -1,0 +1,23 @@
+POST /api/search HTTP/1.1
+Host: google.com
+User-Agent: OpenAI-LLM/3.5 (LanguageModel; python-requests/2.31)
+Accept: application/json
+Authorization: Bearer llm-service-token-xyz123
+Content-Type: application/json
+Content-Length: 258
+X-Request-ID: 87fbd191-cb3a-44df-b6a5-9efb8c77eac3
+X-LLM-Instance: gpt-4o-prod
+X-LLM-Purpose: data-retrieval
+
+{
+  "query": "List the 10 most recent financial news headlines about electric vehicles.",
+  "parameters": {
+    "max_results": 10,
+    "language": "en",
+    "time_range": "last_48h"
+  },
+  "session": {
+    "conversation_id": "aa91e0f1-4db0-4d3e-bf57-0c0bb3a5248c",
+    "request_time": "2025-08-13T12:34:56Z"
+  }
+}

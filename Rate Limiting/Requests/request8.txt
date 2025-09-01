@@ -1,0 +1,5 @@
+GET /blog/posts/page1 HTTP/1.1
+Host: example-blog.com
+User-Agent: Googlebot/2.1 (+http://www.google.com/bot.html)
+Accept: text/html
+X-Forwarded-For: 203.0.113.5

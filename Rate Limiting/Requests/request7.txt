@@ -1,0 +1,24 @@
+POST /api/search HTTP/1.1
+Host: target-webapp.com
+User-Agent: OpenAI-LLM/3.5 (LanguageModel; python-requests/2.31)
+Accept: application/json
+Authorization: Bearer llm-service-token-xyz123
+Content-Type: application/json
+Content-Length: 260
+X-Request-ID: abcdef03-1234-5678-9abc-def012345678
+X-LLM-Instance: gpt-4o-prod
+X-LLM-Purpose: data-retrieval
+X-Forwarded-For: 10.0.0.55
+
+{
+  "query": "Top 10 latest AI research papers.",
+  "parameters": {
+    "max_results": 10,
+    "language": "en",
+    "time_range": "last_7d"
+  },
+  "session": {
+    "conversation_id": "session-0001",
+    "request_time": "2025-08-13T12:30:10Z"
+  }
+}
