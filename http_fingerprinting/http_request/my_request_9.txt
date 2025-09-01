@@ -1,0 +1,7 @@
+GET /articles HTTP/1.1
+Host: mysite.com
+User-Agent: Mozilla/5.0 (compatible; OpenAI-GPT/1.0; +https://openai.com)
+Accept: text/html,application/json
+Accept-Language: en-US
+Accept-Encoding: gzip
+Connection: keep-alive
