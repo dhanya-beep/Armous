@@ -1,0 +1,6 @@
+GET /api/data HTTP/1.1
+Host: mysite.com
+User-Agent: python-requests/2.31.0
+Accept: */*
+Accept-Encoding: gzip, deflate
+Connection: keep-alive
