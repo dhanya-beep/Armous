@@ -1,0 +1,9 @@
+POST /api/query HTTP/1.1
+Host: mysite.com
+User-Agent: LangChain-Agent/0.1.0 (AI Web Scraper)
+Accept: application/json,text/html
+Content-Type: application/json
+Connection: keep-alive
+Content-Length: 87
+
+{"query": "Find recent blog posts about cybersecurity"}
