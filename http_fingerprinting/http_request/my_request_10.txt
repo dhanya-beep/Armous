@@ -1,0 +1,6 @@
+GET /news HTTP/1.1
+Host: mysite.com
+User-Agent: Mozilla/5.0 (compatible; Claude-AI/1.0; +https://anthropic.com)
+Accept: text/html
+Accept-Language: en-US
+Connection: keep-alive
