@@ -1,0 +1,7 @@
+GET /api/users HTTP/1.1
+Host: mysite.com
+User-Agent: python-requests/2.28.1
+Accept: */*
+Accept-Encoding: gzip, deflate
+Connection: keep-alive
+X-Forwarded-For: 192.168.1.100
