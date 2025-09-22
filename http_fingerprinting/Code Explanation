@@ -1,0 +1,52 @@
+This Python script analyzes HTTP request files to detect if they came from:
+- Human users(real browsers)
+- Traditional bots(scrapers, crawlers)
+- AI/LLM bots(ChatGPT, Claude, etc.)
+
+1. Known signature lists:
+        This code sets up two lists of known bot signatures to look for in User-Agent headers:
+          -Traditional bots: Scrapy, curl, python-requests, Selenium, etc.
+          -LLM/AI bots: OpenAI, Claude, ChatGPT, GPT, etc.
+
+2. File Parsing:
+        Reads your text file and extracts HTTP request information
+          - Opens and reads the specified file
+          - Looks for the HTTP request line (GET /path HTTP/1.1)
+          - Parses headers in "Key: Value" format
+          - Tries to find IP addresses in the content
+          - Returns a dictionary with all parsed data
+
+
+
+3. Entropy Calculation: 
+        Measures how "random" or "predictable" text is using Shannon entropy. Many different characters (letters, numbers, symbols, spaces). Uppercases or only lowercases?
+          - Human browsers have complex, varied User-Agent strings with lots of version numbers, parentheses, semicolons, and varied text → High entropy
+          - Simple bots often have short, predictable User-Agents (low entropy)
+          - Lower entropy = more suspicious
+
+4. User-Agent Analysis:
+        The main detective work on the User-Agent header
+          - Length: Too short = suspicious (bots often have minimal User-Agents)
+          - Entropy: Low randomness = suspicious
+          - Bot signatures: Direct matches against known bot patterns
+          - Browser legitimacy: Does it look like a real browser?
+          - Headless detection: Looks for headless browser indicators
+          - Missing standard headers: Accept, Accept-Language, Accept-Encoding
+          - Header count: Too few or too many headers
+          - Connection patterns: Unusual connection behaviors
+          - Header combinations: Inconsistent header sets
+
+Scoring system:
+- Missing User-Agent: +10 points
+- Bot signature found: +25 points  
+- LLM signature found: +30 points
+- Various other suspicious patterns: +5 to +15 points
+
+
+Classification levels:
+-  LLM/AI SCRAPER(HIGH threat): AI bot signatures detected
+-  TRADITIONAL BOT(MEDIUM threat): Regular bot signatures or high score
+-  SUSPICIOUS (LOW threat): Some suspicious indicators
+-  LIKELY HUMAN(NONE): No major red flags
+
+
