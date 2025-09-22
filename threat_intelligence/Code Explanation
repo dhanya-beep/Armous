@@ -1,0 +1,38 @@
+The system evaluates potential security threats by examining multiple data points and calculating a composite risk score to determine whether to ALLOW, CHALLENGE, or BLOCK incoming requests.
+Key Components
+1. Multi-Source Threat Intelligence
+The engine integrates with several real threat intelligence APIs:
+      AbuseIPDB - Checks IP reputation and abuse confidence
+      VirusTotal - Scans IPs and URLs against multiple antivirus engines
+      AlienVault OTX - Analyzes domain reputation using threat pulse data
+      Shodan - Examines open ports and service information
+
+2. Risk Assessment Categories
+The system analyzes six different threat vectors:
+      IP Reputation: Checks if the IP has a history of malicious activity
+      URL/Domain Analysis: Scans for known malicious websites
+      User-Agent Inspection: Identifies bot traffic and suspicious tools
+      Behavioral Patterns: Detects unusual request frequencies and burst patterns
+      Port/Service Analysis: Identifies suspicious open services
+      Historical Data: Tracks request patterns over time
+
+3. Scoring System
+      Each category contributes points to a total risk score
+      Scores are weighted based on threat severity
+      Final scores map to actions:
+      
+      0-3: ALLOW (safe traffic)
+      4-7: CHALLENGE (suspicious, may require additional verification)
+      8+: BLOCK (high risk, likely malicious)
+
+
+Example Workflow
+
+      An incoming request arrives with IP 185.220.101.32
+      The system queries multiple threat intelligence APIs
+      Results show it's a known Tor exit node with medium abuse confidence
+      User-agent analysis reveals automated tool usage
+      Behavioral analysis shows burst request patterns
+      Total score: 12 → BLOCK decision
+
+The code essentially creates an automated security analyst that makes real-time decisions about whether network traffic should be trusted or blocked based on comprehensive threat intelligence data.
