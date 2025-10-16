@@ -1,0 +1,360 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Security Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    html, body { margin:0; padding:0; font-family: system-ui, sans-serif; background:#0b1020; color:#e8ebf3; }
+    header { padding:12px 16px; background:#121a33; border-bottom:1px solid #1b2547; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+    header h1 { font-size:18px; margin:0; color:#a6b3ff; }
+    header button { background:#22305f; color:#e8ebf3; border:1px solid #2a3b7a; padding:8px 12px; border-radius:6px; cursor:pointer; }
+    main { padding:16px; display:grid; gap:16px; grid-template-columns: 1fr 1fr; grid-template-areas:
+      "summary summary"
+      "alerts analysis"
+      "actions decisions"; }
+    .card { background:#0f1630; border:1px solid #1b2547; border-radius:10px; overflow:hidden; }
+    .card h2 { margin:0; padding:12px 16px; background:#121a33; border-bottom:1px solid #1b2547; font-size:16px; color:#c8d0ff; }
+    .content { padding:12px 16px; }
+    .tiles { display:grid; gap:12px; grid-template-columns: repeat(5, 1fr); }
+    .tile { background:#0b142e; border:1px solid #223260; border-radius:10px; padding:12px; }
+    .tile .label { font-size:12px; color:#9aa6d1; }
+    .tile .value { font-size:20px; color:#e8ebf3; margin-top:4px; }
+    .pill { display:inline-block; padding:2px 8px; border-radius:999px; border:1px solid #2a3b7a; background:#121a33; color:#a6b3ff; }
+    .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .muted { color:#9aa6d1; }
+    .list { display:flex; flex-direction:column; gap:8px; max-height:40vh; overflow:auto; }
+    .item { border:1px solid #223260; border-radius:8px; padding:10px; background:#0b142e; }
+    .actions { display:flex; gap:8px; margin-top:8px; }
+    .actions button { background:#22305f; color:#e8ebf3; border:1px solid #2a3b7a; padding:6px 10px; border-radius:6px; cursor:pointer; }
+    .note { width:100%; box-sizing:border-box; background:#0d142a; color:#e8ebf3; border:1px solid #223260; border-radius:6px; padding:8px; margin-top:8px; }
+    .grid2 { display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
+    pre, code { white-space:pre-wrap; word-break:break-word; }
+    @media (max-width: 1200px) {
+      .tiles { grid-template-columns: repeat(3, 1fr); }
+      main { grid-template-columns: 1fr; grid-template-areas:
+        "summary"
+        "alerts"
+        "analysis"
+        "actions"
+        "decisions"; }
+      .grid2 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Security Dashboard</h1>
+    <button onclick="safeCall(refreshAll)">Refresh</button>
+    <button onclick="window.open('/','_self')">Back to Captures</button>
+  </header>
+
+  <main>
+    <div class="card" style="grid-area: summary;">
+      <h2>Summary</h2>
+      <div class="content">
+        <div class="tiles">
+          <div class="tile">
+            <div class="label">Total Captures</div>
+            <div class="value" id="total_captures">0</div>
+          </div>
+          <div class="tile">
+            <div class="label">Active Alerts</div>
+            <div class="value" id="active_alerts">0</div>
+          </div>
+          <div class="tile">
+            <div class="label">Selected Capture</div>
+            <div class="value" id="selected_capture">None</div>
+          </div>
+          <div class="tile">
+            <div class="label">Blocked</div>
+            <div class="value" id="count_block">0</div>
+          </div>
+          <div class="tile">
+            <div class="label">Challenged</div>
+            <div class="value" id="count_challenge">0</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="grid-area: alerts;">
+      <h2>Active Alerts</h2>
+      <div class="content">
+        <div class="list" id="alerts_list">
+          <div class="item muted">No active alerts.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="grid-area: analysis;">
+      <h2>Selected Analysis</h2>
+      <div class="content" id="analysis">
+        <p class="muted">Waiting for selection…</p>
+      </div>
+    </div>
+
+    <div class="card" style="grid-area: actions;">
+      <h2>Actions</h2>
+      <div class="content" id="actions">
+        <p class="muted">Select a capture to enable actions.</p>
+      </div>
+    </div>
+
+    <div class="card" style="grid-area: decisions;">
+      <h2>Decisions History</h2>
+      <div class="content">
+        <div class="list" id="decisions_history">
+          <div class="item muted">No decisions yet.</div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+<script>
+let currentId = null;
+let activeAlertIds = [];
+
+function safeCall(fn) {
+  try { return fn(); } catch(e) { console.error(e); }
+}
+
+async function fetchJSON(url, opts={}) {
+  const r = await fetch(url, opts);
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+}
+
+function fmtKV(k, v) {
+  return `<div class="row"><span class="muted">${escapeHtml(k)}:</span><span>${escapeHtml(v)}</span></div>`;
+}
+
+function parseURL(u) {
+  try { const x = new URL(u); return { host: x.host, path: x.pathname + (x.search||"") }; }
+  catch(e) { return { host: (u.split('/')[2] || u), path: u }; }
+}
+
+async function refreshSummary() {
+  const s = await fetchJSON('/stats');
+  const d = await fetchJSON('/decision_counts');
+  document.getElementById('total_captures').textContent = s.total_captures ?? 0;
+  document.getElementById('active_alerts').textContent = s.active_alerts ?? 0;
+  document.getElementById('selected_capture').textContent = s.selected_capture_id ?? 'None';
+  document.getElementById('count_block').textContent = (d.BLOCK||0);
+  document.getElementById('count_challenge').textContent = (d.CHALLENGE||0);
+}
+
+async function refreshAlerts() {
+  const list = await fetchJSON('/alerts?status=active&limit=200');
+  activeAlertIds = list.map(a => a.capture_id);
+  const el = document.getElementById('alerts_list');
+  if (!list.length) {
+    el.innerHTML = '<div class="item muted">No active alerts.</div>';
+    return;
+  }
+  el.innerHTML = list.map(a => `
+    <div class="item">
+      <div class="row">
+        <span class="pill">${escapeHtml(a.final_action)}</span>
+        <span class="pill">${escapeHtml(a.origin_label || 'Human-likely')}</span>
+        <span class="muted">Alert #${a.alert_id}</span>
+        <span class="muted">Capture #${a.capture_id}</span>
+      </div>
+      <div class="row">
+        <span class="muted">${new Date(a.created_at).toLocaleString()}</span>
+        <span class="muted">Risk: ${escapeHtml(a.risk||0)}</span>
+        <span class="muted">${escapeHtml((a.reasons||[]).join(', '))}</span>
+      </div>
+      <div class="actions">
+        <button onclick="safeCall(()=>resolveAlert(${a.alert_id}))">Resolve</button>
+        <button onclick="safeCall(()=>openSelected(${a.capture_id}))">Open</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function resolveAlert(id) {
+  await fetchJSON(`/alerts/${id}/resolve`, { method:'POST' });
+  await refreshSummary();
+  await refreshAlerts();
+}
+
+async function openSelected(capId) {
+  await fetchJSON(`/capture/${capId}/sendforanalysis`, { method:'POST' });
+  await refreshAll();
+}
+
+function neighbors() {
+  if (!currentId) return {prev:null,next:null};
+  const idx = activeAlertIds.indexOf(currentId);
+  return {
+    prev: idx > 0 ? activeAlertIds[idx-1] : null,
+    next: idx >=0 && idx < activeAlertIds.length-1 ? activeAlertIds[idx+1] : null
+  };
+}
+
+async function refreshAnalysis() {
+  const a = await fetchJSON('/current_analysis');
+  const wrap = document.getElementById('analysis');
+  const act = document.getElementById('actions');
+
+  if (!a.selected) {
+    currentId = null;
+    wrap.innerHTML = '<p class="muted">No selection yet. Use Active Alerts or the Captures page.</p>';
+    act.innerHTML = '<p class="muted">Select a capture to enable actions.</p>';
+    return;
+  }
+
+  const d = a.data;
+  currentId = d.capture_id;
+
+  const http = d.http_analysis || {};
+  const rl = d.rate_limit_analysis || {};
+  const ti = d.threat_intel || {};
+  const ja3 = d.ja3_tls || {};
+  const origin = d.origin_label || 'Human-likely';
+  const req = d.original_capture || {};
+  const method = req.method || (req.request||{}).method || 'GET';
+  const url = req.url || (req.request||{}).url || '/';
+  const { host, path } = parseURL(url);
+
+  // SAFE UA extraction (fix)
+  const hdrs = (req.headers || {});
+  const ua = hdrs['User-Agent'] || hdrs['user-agent'] || '—';
+
+  const status = ((req.response||{}).status) || req.response_status || '—';
+  const nv = neighbors();
+
+  wrap.innerHTML = `
+    <div class="item">
+      <div class="row">
+        <span class="pill">${escapeHtml(http.classification || 'UNKNOWN')}</span>
+        <span class="pill">${escapeHtml(origin)}</span>
+        <span class="muted">Threat: ${escapeHtml(http.threatlevel || 'UNKNOWN')}</span>
+        <span class="muted">Risk: ${escapeHtml(http.riskscore || 0)}</span>
+        <span class="muted">Final: ${escapeHtml(d.final_action || 'ALLOW')}</span>
+      </div>
+      <div class="row">
+        <span class="pill">${escapeHtml(method)}</span>
+        <span class="muted">${escapeHtml(host)} • ${escapeHtml(path)}</span>
+        <span class="muted">Status: ${escapeHtml(status)}</span>
+        <span class="muted">Capture #${d.capture_id}</span>
+        <span class="muted">${new Date(d.timestamp).toLocaleString()}</span>
+      </div>
+      <div class="grid2" style="margin-top:8px;">
+        <div class="item" style="background:#0f1a3d;">
+          <div class="row"><span class="muted">Request</span></div>
+          ${fmtKV('User-Agent', ua)}
+          ${fmtKV('Header Count', String(((req.headers||{})) ? Object.keys(req.headers).length : 0))}
+        </div>
+        <div class="item" style="background:#0f1a3d;">
+          <div class="row"><span class="muted">Results</span></div>
+          ${fmtKV('TI Action', ti.action || '—')}
+          ${fmtKV('TI Score', String((ti.scores||{}).total || 0))}
+          ${fmtKV('JA3 Decision', ja3.decision || '—')}
+          ${fmtKV('Rate-Limited', rl.rate_limited ? 'Yes' : 'No')}
+          ${fmtKV('Requests (window)', String((rl.count_in_window||0) + ' / ' + (rl.rate_limit||0)))}
+        </div>
+      </div>
+      <div class="actions">
+        <button onclick="safeCall(()=>navTo(${nv.prev||'null'}))" ${nv.prev?'' : 'disabled'}>Prev</button>
+        <button onclick="safeCall(()=>navTo(${nv.next||'null'}))" ${nv.next?'' : 'disabled'}>Next</button>
+        <button onclick="safeCall(downloadCurrent)">Download JSON</button>
+      </div>
+    </div>
+  `;
+
+  act.innerHTML = `
+    <div class="actions">
+      <button onclick="safeCall(()=>saveAction('ALLOW'))">Allow</button>
+      <button onclick="safeCall(()=>saveAction('CHALLENGE'))">Challenge</button>
+      <button onclick="safeCall(()=>saveAction('BLOCK'))">Block</button>
+    </div>
+    <textarea id="note" class="note" placeholder="Add a note…"></textarea>
+    <div class="actions">
+      <button onclick="safeCall(saveNote)">Save Note</button>
+    </div>
+  `;
+}
+
+function navTo(id) {
+  if (!id) return;
+  fetchJSON(`/capture/${id}/sendforanalysis`, { method:'POST' }).then(refreshAll).catch(console.error);
+}
+
+async function downloadCurrent() {
+  if (!currentId) return;
+  const r = await fetch(`/analysis/${currentId}/download`);
+  const blob = await r.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `analysis_${currentId}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+async function refreshDecisions() {
+  const rows = await fetchJSON('/decisions_history');
+  const el = document.getElementById('decisions_history');
+  if (!rows.length) {
+    el.innerHTML = '<div class="item muted">No decisions yet.</div>';
+    return;
+  }
+  el.innerHTML = rows.map(r => `
+    <div class="item">
+      <div class="row">
+        <span class="pill">${escapeHtml(r.action)}</span>
+        <span class="pill">${escapeHtml(r.origin_label || 'Human-likely')}</span>
+        <span class="muted">Capture #${r.capture_id}</span>
+        <span class="muted">Risk: ${escapeHtml(r.risk||0)}</span>
+        <span class="muted">${r.classification ? escapeHtml(r.classification) : '—'}</span>
+      </div>
+      <div class="row">
+        <span class="muted">${new Date(r.updated_at).toLocaleString()}</span>
+        <button onclick="safeCall(()=>openSelected(${r.capture_id}))">Open</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function saveAction(action) {
+  if (!currentId) return;
+  await fetchJSON(`/analysis/${currentId}/action`, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ action })
+  });
+  await refreshSummary();
+  await refreshDecisions();
+}
+
+async function saveNote() {
+  if (!currentId) return;
+  const note = document.getElementById('note').value || '';
+  await fetchJSON(`/analysis/${currentId}/action`, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ action:'NOTE', note })
+  });
+  document.getElementById('note').value = '';
+}
+
+async function refreshAll() {
+  await refreshSummary();
+  await refreshAlerts();
+  await refreshAnalysis();
+  await refreshDecisions();
+}
+
+safeCall(refreshAll);
+setInterval(()=>safeCall(refreshAll), 5000);
+</script>
+</body>
+</html>
